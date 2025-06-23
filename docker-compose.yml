@@ -1,0 +1,70 @@
+services:
+  baramineraler-app:
+    container_name: baramineraler-app
+    restart: always
+    env_file: .env
+    build: .
+    ports:
+      - "5008:5008"
+    networks:
+      - web_network
+    depends_on:
+      - baramineraler-db
+
+  baramineraler-db:
+    container_name: baramineraler-db
+    image: postgres:latest
+    restart: always
+    env_file: .env
+    volumes:
+      - baramineraler_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5433"
+    command: postgres -p 5433
+    networks:
+      - web_network
+
+  baramineraler-nginx:
+    container_name: baramineraler-nginx
+    restart: always
+    image: nginx:latest
+    ports:
+      - "40003:40003"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    depends_on:
+      - baramineraler-app
+    networks:
+      - web_network
+
+
+  nfcreader:
+    build:
+      context: ./nfcreader
+    container_name: nfcreader
+    env_file: .env
+    devices:
+      - "/dev/nfc-reader:/dev/nfc-reader"
+    volumes:
+      - /run/pcscd/pcscd.comm:/run/pcscd/pcscd.comm
+    privileged: true
+    restart: always
+    ports:
+      - "5009:5009"
+    environment:
+      - PCSC_SOCKET=/run/pcscd/pcscd.comm
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - baramineraler-app
+      - baramineraler-db
+    networks:
+        - web_network
+
+
+networks:
+  web_network:
+    driver: bridge
+
+volumes:
+  baramineraler_postgres_data:
+    driver: local

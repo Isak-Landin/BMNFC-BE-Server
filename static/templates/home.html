@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hem - Bara Mineraler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- © 2025 Isak Landin and Compliq IT AB. All rights reserved. -->
+
+<div class="home-container">
+    <div class="home-box">
+        <img src="{{ url_for('static', filename='images/login.png') }}" alt="Hem" class="home-icon">
+        <h1>Vart vill du?</h1>
+        <div class="link-buttons">
+            <a href="{{ url_for('login_blueprint.login') }}" class="button-link">Logga in</a>
+            <a href="{{ url_for('export_blueprint.export') }}" class="button-link">Visa Inloggade</a>
+            <a href="{{ url_for('manage_blueprint.manage_login') }}" class="button-link">Administrera Användare</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

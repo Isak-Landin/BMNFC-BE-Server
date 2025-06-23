@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adminpanel - Bara Mineraler</title>
+
+     <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manage_overview.css') }}">
+</head>
+<body>
+    <!-- © 2025 Isak Landin and Compliq IT AB. All rights reserved. -->
+    <!-- Proprietary source. Redistribution prohibited without license. -->
+
+    <header>
+        <h1>Bara Mineraler – Adminpanel</h1>
+        <form method="POST" action="{{ url_for('manage_blueprint.manage_logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="logout-button">Logga ut</button>
+        </form>
+    </header>
+
+    <main class="dashboard">
+        <p class="welcome-message">Välkommen, {{ current_user.username }}</p>
+        <!-- Inloggade Användare -->
+        <section class="card">
+            <h2>Inloggade Användare</h2>
+            {% if logged_in_users %}
+                <table id="logged-in-table" class="user-table">
+                  <thead>
+                    <tr>
+                      <th>Namn</th>
+                      <th>Tagg-ID</th>
+                      <th>Inloggad</th>
+                      <th>Logga ut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for user in logged_in_users %}
+                    <tr data-user-id="{{ user.id }}">
+                      <td>{{ user.user_name }}</td>
+                      <td>{{ user.tag_id }}</td>
+                      <td data-order="{{ user.last_scan_time.isoformat() if user.last_scan_time else '' }}">
+                        {{ user.last_scan_time.strftime('%Y-%m-%d %H:%M') if user.last_scan_time else '—' }}
+                      </td>
+                      <td>
+                        <button class="btn btn-delete logout-user-btn" data-user-id="{{ user.id }}" data-user-name="{{ user.user_name }}">
+                          Logga ut
+                        </button>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+
+            {% else %}
+                <p class="no-data">Inga inloggade användare.</p>
+            {% endif %}
+        </section>
+
+        <!-- Alla Registrerade Användare -->
+        <section class="card">
+            <div class="section-header">
+                <h2>Alla Registrerade Användare</h2>
+                <button class="btn btn-edit" onclick="openAddUserModal()">Lägg till användare</button>
+            </div>
+            {% if registered_users %}
+            <table id="registered-table" class="user-table">
+                <thead>
+                    <tr>
+                        <th>Namn</th>
+                        <th>Tagg-ID</th>
+                        <th>Registrerad</th>
+                        <th>Plats</th>
+                        <th>Aktiv</th>
+                        <th>Inloggad</th>
+                        <th>Åtgärder</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in registered_users %}
+                    <tr data-user-id="{{ user.id }}">
+                        <td>{{ user.user_name }}</td>
+                        <td>{{ user.tag_id }}</td>
+                        <td data-order="{{ user.registration_time.isoformat() }}">{{ user.registration_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ user.location or '-' }}</td>
+                        <td data-order="{{ 1 if user.is_active else 0 }}">{{ 'Ja' if user.is_active else 'Nej' }}</td>
+                        <td data-order="{{ 1 if user.is_logged_in else 0 }}">{{ 'Ja' if user.is_logged_in else 'Nej' }}</td>
+                        <td style="white-space: nowrap;">
+                            <a href="javascript:void(0);"
+                               onclick="openEditModal({{ user.id }}, '{{ user.user_name }}', '{{ user.tag_id }}', '{{ user.location }}', {{ 'true' if user.is_active else 'false' }}, {{ 'true' if user.is_logged_in else 'false' }})"
+                               class="btn btn-edit">Redigera</a>
+
+                            <form method="POST"
+                                  action="{{ url_for('manage_blueprint.manage_delete_user', user_id=user.id) }}"
+                                  class="registered-delete-form"
+                                  style="display: inline;">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <button type="button" class="btn btn-delete"
+                                      onclick="confirmDeleteRegisteredUser(this, '{{ user.user_name }}')">
+                                Ta bort
+                              </button>
+                            </form>
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">Inga registrerade användare.</p>
+            {% endif %}
+        </section>
+
+        <!-- Adminanvändare -->
+        <section class="card">
+            <div class="section-header">
+              <h2>Adminanvändare</h2>
+              <button class="btn btn-edit" onclick="openAddAdminModal()">Lägg till admin</button>
+            </div>
+
+            {% if admins %}
+            <table class="user-table admin-table">
+                <thead>
+                    <tr>
+                        <th>Användarnamn</th>
+                        <th>Åtgärder</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admins %}
+                    <tr data-user-id="{{ admin.id }}">
+                        <td>{{ admin.username }}</td>
+                        <td>
+                            <!-- Edit button just opens a simple modal with username/password -->
+                            <button type="button" class="btn btn-edit"
+                                    onclick="openEditAdminModal({{ admin.id }}, '{{ admin.username }}')">
+                                Redigera
+                            </button>
+                            <!-- Delete button opens a confirmation modal -->
+                            <form method="POST" action="{{ url_for('manage_blueprint.manage_delete_admin', admin_id=admin.id) }}"
+                                  class="admin-delete-form"
+                                  style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="button" class="btn btn-delete"
+                                        onclick="confirmDeleteAdmin(this, '{{ admin.username }}')">
+                                    Ta bort
+                                </button>
+                            </form>
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">Inga administratörer tillagda.</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <!------------ MODALS ------------>
+
+    <!--- Modal for Editing User -->
+    <div id="edit-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3>Redigera Användare</h3>
+        <form id="edit-user-form" data-modal-type="edit-user">
+          <input type="hidden" name="user_id" id="edit-user-id">
+
+          <label for="edit-user-name">Namn:</label>
+          <input type="text" name="name" id="edit-user-name" required>
+
+            <label for="edit-tag-id">Tagg-ID:</label>
+            <div class="tag-id-wrapper">
+              <input type="text" name="tag_id" id="edit-tag-id" required>
+              <span class="tag-scan-trigger" onclick="startNfcScan('edit-tag-id')" title="Skanna kort">✎</span>
+            </div>
+            <p id="edit-scan-status" class="scan-status hidden">Väntar på tagg...</p>
+
+
+
+          <label for="edit-user-location">Plats:</label>
+          <select name="location" id="edit-user-location">
+              <option value="_">_</option>
+          </select>
+
+          <label><input type="checkbox" name="is_active" id="edit-user-active"> Aktiv</label><br>
+          <label><input type="checkbox" name="is_logged_in" id="edit-user-logged-in"> Inloggad</label>
+
+          <p id="edit-user-message" class="modal-message hidden"></p>
+
+
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-primary">Spara</button>
+              <button type="button" class="btn btn-secondary" onclick="closeModal()">Avbryt</button>
+            </div>
+
+        </form>
+      </div>
+    </div>
+
+
+    <!--- Modal for Confirming Admin Deletion -->
+    <div id="confirm-delete-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Bekräfta borttagning</h3>
+            <p>Är du säker på att du vill ta bort adminanvändaren <strong id="admin-to-delete-name"></strong>?</p>
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-danger">Ja, ta bort</button>
+              <button type="button" class="btn btn-secondary" onclick="closeModal()">Avbryt</button>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Modal for Adding User -->
+    <div id="add-user-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3>Ny Registrerad Användare</h3>
+        <form id="add-user-form" data-modal-type="add-user">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label for="new-name">Namn:</label>
+            <input type="text" name="name" id="new-name" required>
+
+            <label for="new-tag-id">Tagg-ID:</label>
+            <div class="tag-id-wrapper">
+              <input type="text" name="tag_id" id="new-tag-id" required>
+              <span class="tag-scan-trigger" onclick="startNfcScan('new-tag-id')" title="Skanna kort">✎</span>
+            </div>
+
+            <p id="add-scan-status" class="scan-status hidden">Väntar på tagg...</p>
+
+
+
+            <label for="new-location">Plats:</label>
+            <select name="location" id="new-location">
+                <option value="-">-</option>
+            </select>
+
+            <label><input type="checkbox" name="is_active" checked> Aktiv</label><br>
+            <label><input type="checkbox" name="is_logged_in"> Inloggad</label>
+
+            <p id="add-user-message" class="modal-message hidden"></p>
+
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-primary">Skapa</button>
+              <button type="button" class="btn btn-secondary" onclick="closeModal()">Avbryt</button>
+            </div>
+        </form>
+      </div>
+    </div>
+
+
+
+
+    <!-- Modal for Adding Admin -->
+    <div id="add-admin-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3>Ny Administratör</h3>
+        <form id="add-admin-form" data-modal-type="add-admin">
+            <label for="admin-username">Användarnamn:</label>
+            <input type="text" id="admin-username" name="username" required>
+
+            <label for="admin-password">Lösenord:</label>
+            <input type="password" id="admin-password" name="password" required placeholder="Lösenord">
+            <label for="admin-password-confirm">Bekräfta Lösenord:</label>
+            <input type="password" id="admin-password-confirm" name="password_confirm" required placeholder="Bekräfta lösenord">
+
+            <p id="add-admin-message" class="modal-message hidden"></p>
+
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-primary">Skapa</button>
+              <button type="button" class="btn btn-secondary" onclick="closeModal()">Avbryt</button>
+            </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal for Editing Admin -->
+    <div id="edit-admin-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3>Redigera Administratör</h3>
+        <form id="edit-admin-form" data-modal-type="edit-admin">
+            <input type="hidden" id="edit-admin-id" name="id">
+
+            <label for="edit-admin-username">Användarnamn:</label>
+            <input type="text" id="edit-admin-username" name="username">
+
+            <label for="edit-admin-password">Lösenord:</label>
+            <input type="password" id="edit-admin-password" name="password" required placeholder="Lösenord">
+            <label for="edit-admin-password-confirm">Bekräfta Lösenord:</label>
+            <input type="password" id="edit-admin-password-confirm" name="password_confirm" required placeholder="Bekräfta lösenord">
+
+            <p id="edit-admin-message" class="modal-message hidden"></p>
+
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-primary">Spara</button>
+              <button type="button" class="btn btn-secondary" onclick="closeModal()">Avbryt</button>
+            </div>
+        </form>
+      </div>
+    </div>
+
+
+
+
+
+
+    <!-- JS Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="{{ url_for('static', filename='js/manage_overview.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/nfc_registration.js') }}"></script>
+
+</body>
+</html>

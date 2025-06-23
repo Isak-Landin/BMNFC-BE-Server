@@ -1,0 +1,104 @@
+/* © 2025 Isak Landin and Compliq IT AB. All rights reserved. */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(to bottom right, #f0f4f8, #dfe8f1);
+    color: #212529;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Back Link */
+.back-link {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    font-size: 1.1rem;
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+    z-index: 10;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.login-container {
+    text-align: center;
+    width: 100%;
+}
+
+.login-box {
+    background: white;
+    padding: 5vh 4vw;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    max-width: 900px;
+    width: min(90vw, 900px);
+    margin: auto;
+    transition: all 0.3s ease;
+}
+
+.login-box:hover {
+    box-shadow: 0 12px 38px rgba(0, 0, 0, 0.12);
+}
+
+h1 {
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: #1e293b;
+    margin-bottom: 2vh;
+}
+
+/* Table Styling */
+.table-container {
+    max-height: 40vh;
+    overflow-y: auto;
+    margin-bottom: 2vh;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.user-table th, .user-table td {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.user-table th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+    color: #334155;
+}
+
+/* Export Button */
+.export-button-container {
+    margin-top: 2vh;
+}
+
+.export-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #4a90e2;
+    color: white;
+    text-decoration: none;
+    font-size: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: background 0.3s ease;
+}
+
+.export-button:hover {
+    background-color: #357ab8;
+}

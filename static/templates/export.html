@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exportera Inloggningar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/export.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- © 2025 Isak Landin and Compliq IT AB. All rights reserved. -->
+
+    <a href="{{ url_for('home_blueprint.home') }}" class="back-link">← Tillbaka</a>
+
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Inloggade Användare Idag</h1>
+
+            <div class="table-container">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>Namn</th>
+                            <th>Tag ID</th>
+                            <th>Inloggad Tid</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if users %}
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.user_name }}</td>
+                            <td>{{ user.tag_id }}</td>
+                            <td data-order="{{ user.last_scan_time.isoformat() if user.last_scan_time else '' }}">
+                                {{ user.last_scan_time.strftime('%Y-%m-%d %H:%M') if user.last_scan_time else '—' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3">Inga användare inloggade än.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="export-button-container">
+                <a href="{{ url_for('export_blueprint.download_csv') }}" class="export-button">Exportera dagens lista som CSV</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
