@@ -38,29 +38,6 @@ services:
       - web_network
 
 
-  nfcreader:
-    build:
-      context: ./nfcreader
-    container_name: nfcreader
-    env_file: .env
-    devices:
-      - "/dev/nfc-reader:/dev/nfc-reader"
-    volumes:
-      - /run/pcscd/pcscd.comm:/run/pcscd/pcscd.comm
-    privileged: true
-    restart: always
-    ports:
-      - "5009:5009"
-    environment:
-      - PCSC_SOCKET=/run/pcscd/pcscd.comm
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - baramineraler-app
-      - baramineraler-db
-    networks:
-        - web_network
-
-
 networks:
   web_network:
     driver: bridge
