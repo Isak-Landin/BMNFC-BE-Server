@@ -18,8 +18,9 @@ class NFCScanBuffer(db.Model):
     is_processed = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=to_stockholm_time(datetime.now()), nullable=False)
     source = Column(String(120), nullable=False)  # e.g., 'nfc_reader_frontend', 'nfc_reader_container'
+    whoami = Column(String(120), nullable=False)  # Which frontend that has sent the request
 
-    def __init__(self, uid, source, scan_type='register', is_processed=False, timestamp=None):
+    def __init__(self, uid, source, whoami, scan_type='register', is_processed=False, timestamp=None):
         if not uid or not source:
             raise ValueError("Tag ID and source are required for TagsToRegister")
         self.uid = uid
@@ -27,6 +28,7 @@ class NFCScanBuffer(db.Model):
         self.source = source
         self.is_processed = is_processed
         self.created_at = timestamp or to_stockholm_time(datetime.now())
+        self.whoami = whoami
 
     def __repr__(self):
         return f"<TagsToRegister {self.tag_id} - Type: {self.type}, Processed: {self.is_processed}, Source: {self.source}>"

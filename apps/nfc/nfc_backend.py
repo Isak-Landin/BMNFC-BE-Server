@@ -8,6 +8,8 @@ from apps.nfc.models import NFCScanBuffer
 from apps.extensions import to_stockholm_time, db
 from apps.nfc.models import NFCLoginLog
 
+from apps.decorators import require_nfc_token
+
 
 # NFC-tag-system
 # Copyright (c) 2025 Isak Landin
@@ -48,13 +50,9 @@ def nfc_backend():
 
 
 @nfc_backend_blueprint.route('/set-nfc-status', methods=['POST'])
+@require_nfc_token
 def set_nfc_status():
     try:
-        # Token validation
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or auth_header != f"Bearer {NFC_SECRET_TOKEN}":
-            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
-
         if request.method == 'POST':
             data = request.get_json()
             if not data:
@@ -78,16 +76,13 @@ def set_nfc_status():
 
 
 @nfc_backend_blueprint.route('/get-nfc-status', methods=['GET'])
+@require_nfc_token
 def get_nfc_status():
     """
     This endpoint is used to check if the NFC tag should go through registration or login.
     It returns a simple message indicating the action to be taken.
     """
     try:
-        # Token validation
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or auth_header != f"Bearer {NFC_SECRET_TOKEN}":
-            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
 
         # Here we simply return the value of register_or_login_value
         value_to_return = register_or_login_value
@@ -105,14 +100,8 @@ def get_nfc_status():
         return jsonify({'status': 'error', 'message': 'Internt serverfel'}), 500
 
 
-# TODO: We should revise all returned messages to be stored as entries in the NFCLoginLog model
-#  Keep in mind that this is a simple log model, that is simply used to log the nfc login attempts
-#  These logs will then be returned to the frontend for display, this is why it is essential that the logs
-#  Do not contain unnecessary information, and are clear and concise.
-
-# TODO: We should log all failed attempts whom were not denied due to an incorrect uid, but rather due to
-#  an error in the processing of the request, such as a database error or an unhandled exception.
 @nfc_backend_blueprint.route('/scan-login', methods=['POST'])
+@require_nfc_token
 def scan_login():
     """
     self.uid = uid
@@ -124,12 +113,8 @@ def scan_login():
     self.is_processed = is_processed
     """
     try:
-        # Token validation
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or auth_header != f"Bearer {NFC_SECRET_TOKEN}":
-            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
 
-        whoami = request.headers.get('Whoami')
+        whoami = request.headers.get('whoami')
         if not whoami:
             return jsonify({'status': 'error', 'message': 'Identifier header saknas'}), 400
 
@@ -213,81 +198,15 @@ def scan_login():
         return jsonify({'status': 'error', 'message': 'Internt serverfel'}), 500
 
 
-"""
-# TODO: Make sure this is revised to not expect the uid to be rendered from this route
-#  Previously, this was used to render the NFC from the NFC reader,
-#  but is now expected to be called with the uid in the request body
-@nfc_backend_blueprint.route('/scan-register', methods=['POST'])
-def scan_register():
-    try:
-        # --- Authorization Check ---
-        auth_header = request.headers.get('Authorization')
-        if auth_header != f"Bearer {NFC_SECRET_TOKEN}":
-            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
-
-        # --- Payload Parsing ---
-        data = request.get_json()
-        if not data:
-            return jsonify({'status': 'error', 'message': 'Ingen data mottagen'}), 400
-
-        user_id = data.get('user_id')  # Optional
-        user_name = (data.get('user_name') or '').strip()
-        tag_id = (data.get('tag_id') or '').strip()
-
-        print(f"Received data: {data}")
-
-        if not user_name or not tag_id:
-            return jsonify({'status': 'error', 'message': 'Användarnamn och tagg-ID krävs'}), 422
-
-        # --- Tag Uniqueness Check (exclude self on update) ---
-        conflicting_user = RegisteredUsers.query.filter(RegisteredUsers.tag_id == tag_id)
-        if user_id:
-            conflicting_user = conflicting_user.filter(RegisteredUsers.id != user_id)
-        if conflicting_user.first():
-            return jsonify({
-                'status': 'error',
-                'message': f'Tagg-ID redan registrerad för annan användare'
-            }), 409
-
-        # --- Handle Update or Create ---
-        if user_id:
-            user = RegisteredUsers.query.filter_by(id=user_id).first()
-            if not user:
-                return jsonify({'status': 'error', 'message': 'Användare inte hittad'}), 404
-
-            user.user_name = user_name
-            user.tag_id = tag_id
-            db.session.commit()
-            return jsonify({'status': 'success', 'message': f'Tagg-ID uppdaterat för {user_name}'}), 200
-
-        else:
-            new_user = RegisteredUsers(user_name=user_name, tag_id=tag_id)
-            db.session.add(new_user)
-            db.session.commit()
-            return jsonify({'status': 'success', 'message': f'Tagg-ID registrerat för {user_name}'}), 201
-
-    except SQLAlchemyError as db_err:
-        current_app.logger.error(f"[DB ERROR] {db_err}")
-        db.session.rollback()
-        return jsonify({'status': 'error', 'message': 'Databasfel'}), 500
-
-    except Exception as ex:
-        current_app.logger.error(f"[SERVER ERROR] {ex}")
-        return jsonify({'status': 'error', 'message': 'Internt serverfel'}), 500
-"""
-
-# nfc_backend_routes.py
 @nfc_backend_blueprint.route('/scan-store-register', methods=['POST'])
+@require_nfc_token
 def scan_store_register():
     try:
-        auth_header = request.headers.get('Authorization')
-        if auth_header != f"Bearer {NFC_SECRET_TOKEN}":
-            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
-
         data = request.get_json()
         uid = data.get('uid')
         source = data.get('source')
         scan_type = data.get('scan_type')
+        whoami = request.headers.get('whoami')
         if not source:
             return jsonify({'status': 'error', 'message': 'Source saknas'}), 400
         if not uid:
@@ -296,6 +215,7 @@ def scan_store_register():
             return jsonify({'status': 'error', 'message': 'Scan_type saknas'}), 400
         if not isinstance(uid, str) or len(uid.strip()) == 0:
             return jsonify({'status': 'error', 'message': 'Ogiltig UID'}), 400
+        if no
 
         buffer_entry = NFCScanBuffer(uid=uid, is_processed=False, source=source, scan_type=scan_type)
 

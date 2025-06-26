@@ -12,6 +12,9 @@ from flask_wtf import csrf
 
 from sqlalchemy import and_
 
+from apps.decorators import require_nfc_token
+
+
 NFC_SECRET_TOKEN = os.getenv('NFC_SECRET_TOKEN', 'default_token')
 
 
@@ -30,6 +33,7 @@ nfc_blueprint = Blueprint('nfc_blueprint', __name__, url_prefix='/nfc')
 
 
 @nfc_blueprint.route('/wait-for-registration-uid', methods=['GET'])
+@require_nfc_token
 def wait_for_registration_uid():
     """
     This endpoint waits for a UID to be scanned.
@@ -52,8 +56,10 @@ def wait_for_registration_uid():
 
 
 @nfc_blueprint.route('/wait-for-login-uid', methods=['POST'])
+@require_nfc_token
 def wait_for_login_uid():
-    rows = NFCLoginLog.query.filter_by(is_processed=False, source='nfc_reader_container')\
+    whoami = request.headers.get('whoami')
+    rows = NFCLoginLog.query.filter_by(is_processed=False, whoami=whoami)\
                             .order_by(NFCLoginLog.created_at.asc())\
                             .limit(3).all()
 
@@ -65,7 +71,8 @@ def wait_for_login_uid():
             'success': row.success,
             'user_name': row.user_name,
             'created_at': row.created_at.isoformat(),
-            'source': row.source
+            'source': row.source,
+            'whoami': row.whoami
         } for row in rows]
 
         return jsonify({'success': True, 'data': data}), 200
@@ -74,6 +81,7 @@ def wait_for_login_uid():
 
 
 @nfc_blueprint.route('/confirm-processed', methods=['POST'])
+@require_nfc_token
 def confirm_processed():
     try:
         data = request.get_json(force=True)
