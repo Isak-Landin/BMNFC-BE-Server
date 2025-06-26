@@ -27,8 +27,35 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function pollLoginMessages() {
+        const secret = '';
+        const whoami = '';
+
+        // Fetch the 'whoami' value from the server
+        fetch("http://localhost:5000/whoami", {
+            method: "GET",
+        })
+        .then(res => res.json())
+        .then(data => {
+            whoami = data.whoami;
+        });
+
+        // Fetch the secret from the local mini flask server
+        fetch("http://localhost:5000/secret", {
+            method: "GET",
+        })
+        .then(res => res.json())
+        .then(data => {
+            secret = data.secret;
+        });
+
+
+
         fetch("/nfc/wait-for-login-uid", {
-            method: "POST"
+            method: "POST",
+            headers: {
+                'Authorization': `Bearer ${secret}`,
+                'whoami': whoami,
+            }
         })
         .then(res => res.json())
         .then(data => {
