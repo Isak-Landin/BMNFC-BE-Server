@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(data => {
                 secret = data.secret;
 
-                // ✅ Now run the existing logic exactly as you had it
+
                 return fetch("/nfc/wait-for-login-uid", {
                     method: "POST",
                     headers: {
@@ -82,11 +82,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     function acknowledgeMessages(ids) {
-        fetch("/nfc/confirm-processed", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids })
-        }).catch(err => {
+    let secret = '';
+
+    // Fetch secret first, then continue
+    fetch("http://localhost:5000/secret")
+        .then(res => res.json())
+        .then(data => {
+            secret = data.secret;
+
+            // Now acknowledge messages
+            return fetch("/nfc/confirm-processed", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${secret}`
+                },
+                body: JSON.stringify({ ids })
+            });
+        })
+        .catch(err => {
             console.error("❌ Failed to acknowledge:", err);
         });
     }
