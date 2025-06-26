@@ -215,9 +215,10 @@ def scan_store_register():
             return jsonify({'status': 'error', 'message': 'Scan_type saknas'}), 400
         if not isinstance(uid, str) or len(uid.strip()) == 0:
             return jsonify({'status': 'error', 'message': 'Ogiltig UID'}), 400
-        if no
+        if not whoami:
+            return jsonify({'status': 'error', 'message': 'Identifier header saknas'}), 400
 
-        buffer_entry = NFCScanBuffer(uid=uid, is_processed=False, source=source, scan_type=scan_type)
+        buffer_entry = NFCScanBuffer(uid=uid, is_processed=False, source=source, scan_type=scan_type, whoami=whoami)
 
         db.session.add(buffer_entry)
         db.session.commit()
