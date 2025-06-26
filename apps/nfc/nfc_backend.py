@@ -129,6 +129,10 @@ def scan_login():
         if not auth_header or auth_header != f"Bearer {NFC_SECRET_TOKEN}":
             return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
 
+        whoami = request.headers.get('Whoami')
+        if not whoami:
+            return jsonify({'status': 'error', 'message': 'Identifier header saknas'}), 400
+
         data = request.get_json(force=True)
         print(f"Received data: {data}")
         if not data:
@@ -150,7 +154,8 @@ def scan_login():
                 success=False,
                 source=source,
                 user_name=None,
-                is_processed=False
+                is_processed=False,
+                whoami=whoami
             )
             db.session.add(new_entry)
             db.session.commit()
@@ -167,7 +172,8 @@ def scan_login():
                 success=False,
                 source=source,
                 user_name=user.user_name,
-                is_processed=False
+                is_processed=False,
+                whoami=whoami
             )
             db.session.add(new_entry)
             db.session.commit()
@@ -185,7 +191,8 @@ def scan_login():
             success=True,
             source=source,
             user_name=user.user_name,
-            is_processed=False
+            is_processed=False,
+            whoami=whoami
         )
         db.session.add(new_entry)
         db.session.commit()

@@ -42,10 +42,11 @@ class NFCLoginLog(db.Model):
     success = Column(Boolean, nullable=False)
     created_at = Column(DateTime(timezone=True), default=to_stockholm_time(datetime.now()), nullable=False)
     source = Column(String(120), nullable=False, default='backend')  # e.g., 'nfc_reader_frontend', 'nfc_reader_container'
+    whoami = Column(String(120), nullable=False)  # Which frontend that has sent the request
 
     is_processed = Column(Boolean, default=False, nullable=False)
 
-    def __init__(self, uid, message, success, source='backend', user_name=None, is_processed=False):
+    def __init__(self, uid, message, success, whoami, source='backend', user_name=None, is_processed=False):
         self.uid = uid
         self.message = message
         self.success = success
@@ -53,6 +54,7 @@ class NFCLoginLog(db.Model):
         self.user_name = user_name
         self.created_at = to_stockholm_time(datetime.now())
         self.is_processed = is_processed
+        self.whoami = whoami
 
     def __repr__(self):
         return f"<NFCLoginLog uid={self.uid} success={self.success} user={self.user_name}>"
