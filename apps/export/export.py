@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify
 
 from flask import Response
 from apps.manage.models import RegisteredUsers
@@ -55,3 +55,18 @@ def download_csv():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment;filename=dagens_inloggade.csv"}
     )
+
+
+@export_blueprint.route('/json', methods=['GET'])
+def export_json():
+    users = RegisteredUsers.query.filter_by(is_logged_in=True).all()
+    result = []
+    for user in users:
+        result.append({
+            'user_name': user.user_name,
+            'tag_id': user.tag_id,
+            'last_scan_time': to_stockholm_time(user.last_scan_time).strftime('%Y-%m-%d %H:%M') if user.last_scan_time else '—',
+            'last_scan_iso': to_stockholm_time(user.last_scan_time).isoformat() if user.last_scan_time else ''
+        })
+    return jsonify(result)
+
