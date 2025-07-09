@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify, current_app, stream_with_context, Response
 import os
 from datetime import datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,6 +9,8 @@ from apps.extensions import to_stockholm_time, db
 from apps.nfc.models import NFCLoginLog
 
 from apps.decorators import require_nfc_token
+import json
+import time
 
 
 # NFC-tag-system
@@ -226,4 +228,45 @@ def scan_store_register():
     except Exception as e:
         current_app.logger.error(f"Fel i scan_store_register: {e}")
         return jsonify({'status': 'error', 'message': 'Serverfel'}), 500
+
+
+# TODO: Replacing the existing polling system with a more efficient approach
+#  SSE (Server-Sent Events) or WebSockets would be more efficient for real-time updates.
+@nfc_backend_blueprint.route('/nfc/login-sse')
+@require_nfc_token
+def login_sse():
+    whoami = request.args.get('whoami')
+    secret = request.args.get('secret')
+
+    @stream_with_context
+    def event_stream():
+        last_seen_id = None
+
+        while True:
+            entry = NFCLoginLog.query.filter_by(is_processed=False).order_by(NFCLoginLog.created_at.desc()).first()
+
+            if entry and entry.id != last_seen_id:
+                payload = {
+                    'id': entry.id,
+                    'uid': entry.uid,
+                    'user_name': entry.user_name,
+                    'message': entry.message,
+                    'success': entry.success,
+                    'created_at': entry.created_at.isoformat()
+                }
+
+                # Mark processed
+                entry.is_processed = True
+                db.session.commit()
+
+                last_seen_id = entry.id
+                yield f"data: {json.dumps(payload)}\n\n"
+
+            time.sleep(1)
+
+    response = Response(event_stream(), mimetype='text/event-stream')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['X-Accel-Buffering'] = 'no'
+    return response
+
 
