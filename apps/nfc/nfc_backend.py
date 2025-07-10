@@ -241,7 +241,7 @@ def login_sse():
         last_seen_id = None
 
         while True:
-            entry = NFCLoginLog.query.filter_by(is_processed=False).filter_by(source=whoami).order_by(NFCLoginLog.created_at.desc()).first()
+            entry = NFCLoginLog.query.filter_by(is_processed=False).order_by(NFCLoginLog.created_at.desc()).first()
 
             if entry and entry.id != last_seen_id:
                 payload = {
