@@ -236,14 +236,13 @@ def scan_store_register():
 @require_nfc_token
 def login_sse():
     whoami = request.args.get('whoami')
-    secret = request.args.get('secret')
 
     @stream_with_context
     def event_stream():
         last_seen_id = None
 
         while True:
-            entry = NFCLoginLog.query.filter_by(is_processed=False).order_by(NFCLoginLog.created_at.desc()).first()
+            entry = NFCLoginLog.query.filter_by(is_processed=False, source=whoami).order_by(NFCLoginLog.created_at.desc()).first()
 
             if entry and entry.id != last_seen_id:
                 payload = {
@@ -262,7 +261,7 @@ def login_sse():
                 last_seen_id = entry.id
                 yield f"data: {json.dumps(payload)}\n\n"
 
-            time.sleep(1)
+            time.sleep(0.5)  # Polling interval
 
     response = Response(event_stream(), mimetype='text/event-stream')
     response.headers['Cache-Control'] = 'no-cache'
