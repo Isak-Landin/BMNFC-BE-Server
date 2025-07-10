@@ -10,7 +10,6 @@ from apps.nfc.models import NFCLoginLog
 
 from apps.decorators import require_nfc_token
 import json
-import time
 
 
 # NFC-tag-system
@@ -260,8 +259,6 @@ def login_sse():
 
                 last_seen_id = entry.id
                 yield f"data: {json.dumps(payload)}\n\n"
-
-            time.sleep(0.5)  # Polling interval
 
     response = Response(event_stream(), mimetype='text/event-stream')
     response.headers['Cache-Control'] = 'no-cache'
