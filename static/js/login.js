@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch("http://localhost:5000/secret")
             .then(res => res.json())
             .then(data => {
-                return fetch("/nfc/confirm-processed", {
+                return fetch("/nfc/backend/confirm-processed", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const whoami = whoamiData.whoami;
         const secret = secretData.secret;
 
-        const source = new EventSource(`/nfc/login-sse?whoami=${whoami}&secret=${secret}`);
+        const source = new EventSource(`/nfc/backend/login-sse?whoami=${whoami}&secret=${secret}`);
 
         source.onmessage = function (event) {
             const data = JSON.parse(event.data);
