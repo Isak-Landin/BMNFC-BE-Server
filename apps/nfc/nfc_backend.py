@@ -1,3 +1,5 @@
+import time
+
 from flask import Blueprint, render_template, request, jsonify, current_app, stream_with_context, Response
 import os
 from datetime import datetime, timedelta
@@ -244,8 +246,8 @@ def login_sse():
         while True:
             entry = NFCLoginLog.query.filter_by(is_processed=False).order_by(NFCLoginLog.created_at.desc()).first()
             if not entry:
-                yield "data: {}\n\n"  # Keep the connection alive
-                print("Connection alive, no new entries found.")
+                time.sleep(0.2)
+                continue
             if entry and entry.id != last_seen_id:
                 payload = {
                     'id': entry.id,
