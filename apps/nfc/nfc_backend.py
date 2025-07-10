@@ -236,13 +236,16 @@ def scan_store_register():
 def login_sse():
     whoami = request.args.get('whoami')
 
+
     @stream_with_context
     def event_stream():
         last_seen_id = None
 
         while True:
             entry = NFCLoginLog.query.filter_by(is_processed=False).order_by(NFCLoginLog.created_at.desc()).first()
-
+            if not entry:
+                yield "data: {}\n\n"  # Keep the connection alive
+                print("Connection alive, no new entries found.")
             if entry and entry.id != last_seen_id:
                 payload = {
                     'id': entry.id,
