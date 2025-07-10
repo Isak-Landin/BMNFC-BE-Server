@@ -51,7 +51,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const whoami = whoamiData.whoami;
         const secret = secretData.secret;
 
-        const source = new EventSource(`/nfc/backend/login-sse?whoami=${whoami}&secret=${secret}`);
+        const source = new EventSource(`/nfc/backend/login-sse`, {
+            headers: {
+                'Authorization': `Bearer ${secret}`,
+                'Whoami': whoami
+            }
+        }
+        );
 
         source.onmessage = function (event) {
             const data = JSON.parse(event.data);
