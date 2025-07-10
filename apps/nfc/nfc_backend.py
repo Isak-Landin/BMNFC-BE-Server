@@ -232,7 +232,7 @@ def scan_store_register():
 
 # TODO: Replacing the existing polling system with a more efficient approach
 #  SSE (Server-Sent Events) or WebSockets would be more efficient for real-time updates.
-@nfc_backend_blueprint.route('/nfc/login-sse')
+@nfc_backend_blueprint.route('/login-sse')
 @require_nfc_token
 def login_sse():
     whoami = request.args.get('whoami')
