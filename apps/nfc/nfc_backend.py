@@ -238,7 +238,6 @@ def scan_store_register():
 def login_sse():
     whoami = request.args.get('whoami')
 
-
     @stream_with_context
     def event_stream():
         last_seen_id = None

@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     const toastQueue = [];
     let isDisplaying = false;
+    const pollInterval = 300;
 
     const toast = document.getElementById("nfc-toast");
 
@@ -25,58 +26,87 @@ document.addEventListener("DOMContentLoaded", function () {
         showToast(message, success);
     }
 
-    function acknowledgeMessages(ids) {
-        fetch("http://localhost:5000/secret")
+    function pollLoginMessages() {
+        let secret = '';
+        let whoami = '';
+
+        // Fetch whoami first
+        fetch("http://localhost:5000/whoami")
             .then(res => res.json())
             .then(data => {
-                return fetch("/nfc/backend/confirm-processed", {
+                whoami = data.whoami;
+
+                // Fetch secret next
+                return fetch("http://localhost:5000/secret");
+            })
+            .then(res => res.json())
+            .then(data => {
+                secret = data.secret;
+
+
+                return fetch("/nfc/wait-for-login-uid", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${data.secret}`
-                    },
-                    body: JSON.stringify({ ids })
+                        'Authorization': `Bearer ${secret}`,
+                        'whoami': whoami,
+                    }
                 });
             })
+            .then(res => res.json())
+            .then(data => {
+                console.log("🔥 Poll result:", data);
+                if (data.success === true && Array.isArray(data.data)) {
+                    const ids = [];
+                    data.data.forEach(entry => {
+                        toastQueue.push({
+                            message: entry.message,
+                            success: entry.success
+                        });
+                        ids.push(entry.id);
+                    });
+
+                    if (ids.length > 0) {
+                        acknowledgeMessages(ids);
+                    }
+
+                    displayNextToast();
+                }
+            })
             .catch(err => {
-                console.error("❌ Failed to acknowledge:", err);
+                console.error("Polling error:", err);
+            })
+            .finally(() => {
+                setTimeout(pollLoginMessages, pollInterval);
             });
     }
 
-    // Retrieve whoami + secret, then open SSE connection
-    Promise.all([
-        fetch("http://localhost:5000/whoami").then(res => res.json()),
-        fetch("http://localhost:5000/secret").then(res => res.json())
-    ]).then(([whoamiData, secretData]) => {
-        const whoami = whoamiData.whoami;
-        const secret = secretData.secret;
 
-        const source = new EventSource(`/nfc/backend/login-sse`, {
-            headers: {
-                'Authorization': `Bearer ${secret}`,
-                'Whoami': whoami
-            }
-        }
-        );
+    function acknowledgeMessages(ids) {
+    let secret = '';
 
-        source.onmessage = function (event) {
-            const data = JSON.parse(event.data);
+    // Fetch secret first, then continue
+    fetch("http://localhost:5000/secret")
+        .then(res => res.json())
+        .then(data => {
+            secret = data.secret;
 
-            toastQueue.push({
-                message: data.message,
-                success: data.success
+            // Now acknowledge messages
+            return fetch("/nfc/confirm-processed", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${secret}`
+                },
+                body: JSON.stringify({ ids })
             });
+        })
+        .catch(err => {
+            console.error("❌ Failed to acknowledge:", err);
+        });
+    }
 
-            if (data.id) {
-                acknowledgeMessages([data.id]);
-            }
-
-            displayNextToast();
-        };
-
-        source.onerror = function (err) {
-            console.error("🔌 SSE connection lost:", err);
-            // Optionally reconnect with a delay
-        };
-    });
+    pollLoginMessages();
 });
+
+// © 2025 Isak Landin and Compliq IT AB. All rights reserved.
+// Proprietary software. Unauthorized use is prohibited.
