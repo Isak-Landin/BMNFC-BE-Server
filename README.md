@@ -1,4 +1,4 @@
-# Taggsystem
+# Taggsystem (Deprecated) - Current Proprietary Software @Complit-IT-AB
 
 Ett säkert och smidigt system för att använda **NFC-taggar** som in- och utloggning.  
 Systemet är utvecklat för att i realtid visa vilka personer som befinner sig i byggnaden, med särskilt fokus på säkerhet vid exempelvis brand eller evakuering.
