@@ -123,13 +123,10 @@ environment:
   - PCSC_SOCKET=/run/pcscd/pcscd.comm
 ```
 
-## License
+## Licence
+GPL 3
+IOW - Fuck it. It's here, is it not.
 
-This project is proprietary software jointly owned by Isak Landin and Compliq IT AB.
+## License (Deprecated)
 
-All rights reserved. Unauthorized copying, distribution, or modification of any part of this software is strictly prohibited without prior written permission from both copyright holders.
-
-For licensing or commercial inquiries, please contact:
-
-- Isak Landin: [support@isaklandin.com]
-- Compliq IT AB: [ALJ@compliq.se]
+This project is proprietary software...
